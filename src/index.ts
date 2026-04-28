@@ -7,6 +7,7 @@ export { prompt, ansi } from './prompts';
 export type {
   OptsMap,
   AddOption,
+  Prettify,
   OptionDef,
   ArgDef,
   ActionHandler,

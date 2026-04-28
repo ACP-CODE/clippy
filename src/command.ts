@@ -389,7 +389,13 @@ export class Command<
           continue;
         }
 
-        if (optMeta.takesValue) {
+        if (optMeta.isVariadic) {
+          const values: string[] = inlineValue ? [inlineValue] : [];
+          while (i + 1 < rawArgs.length && !rawArgs[i + 1]!.startsWith('-')) {
+            values.push(rawArgs[++i]!);
+          }
+          this._setOption(optMeta.key, values, optMeta.def);
+        } else if (optMeta.takesValue) {
           const value = inlineValue ?? rawArgs[++i];
           if (value === undefined || value.startsWith('-')) {
             this._error(`Option '${flag}' requires a value`, 'clippy.missingValue');
@@ -397,12 +403,6 @@ export class Command<
           this._setOption(optMeta.key, value, optMeta.def);
         } else if (optMeta.isNegatable) {
           this._optionValues[optMeta.key] = false;
-        } else if (optMeta.isVariadic) {
-          const values: string[] = inlineValue ? [inlineValue] : [];
-          while (i + 1 < rawArgs.length && !rawArgs[i + 1]!.startsWith('-')) {
-            values.push(rawArgs[++i]!);
-          }
-          this._setOption(optMeta.key, values, optMeta.def);
         } else {
           // Boolean flag
           this._setOption(optMeta.key, true, optMeta.def);
@@ -410,7 +410,6 @@ export class Command<
       } else if (arg.startsWith('-') && arg.length > 1) {
         // Short flags, possibly combined: -dsp cheese
         const chars = arg.slice(1);
-        let handled = false;
 
         for (let ci = 0; ci < chars.length; ci++) {
           const short = `-${chars[ci]}`;
@@ -423,7 +422,15 @@ export class Command<
             break;
           }
 
-          if (optMeta.takesValue) {
+          if (optMeta.isVariadic) {
+            const rest = chars.slice(ci + 1);
+            const values: string[] = rest.length > 0 ? [rest] : [];
+            while (i + 1 < rawArgs.length && !rawArgs[i + 1]!.startsWith('-')) {
+              values.push(rawArgs[++i]!);
+            }
+            this._setOption(optMeta.key, values, optMeta.def);
+            break;
+          } else if (optMeta.takesValue) {
             // Remaining chars after this one are the value, or next arg
             const rest = chars.slice(ci + 1);
             const value = rest.length > 0 ? rest : rawArgs[++i];
@@ -431,7 +438,6 @@ export class Command<
               this._error(`Option '${short}' requires a value`, 'clippy.missingValue');
             }
             this._setOption(optMeta.key, value, optMeta.def);
-            handled = true;
             break;
           } else {
             this._setOption(optMeta.key, true, optMeta.def);

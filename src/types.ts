@@ -14,7 +14,11 @@ type KebabToCamel<S extends string> =
     ? `${Head}${Capitalize<KebabToCamel<Tail>>}`
     : S;
 
-type OptionKey<F extends string> = KebabToCamel<ExtractLongName<F>>;
+// Negatable flags like `--no-open` produce key `open` at runtime, so strip
+// the leading `no-` segment before camel-casing.
+type StripNoPrefix<S extends string> = S extends `no-${infer Rest}` ? Rest : S;
+
+type OptionKey<F extends string> = KebabToCamel<StripNoPrefix<ExtractLongName<F>>>;
 
 // ─── Option Value Type Inference ────────────────────────────
 
@@ -70,14 +74,21 @@ export interface ArgDef {
 
 export type OptsMap = Record<string, unknown>;
 
+/**
+ * Flattens intersection types into a single object literal so that hover
+ * tooltips and `expectTypeOf` comparisons see a clean `{ a: A; b: B }`
+ * instead of `{ a: A } & { b: B } & Record<never, never>`.
+ */
+export type Prettify<T> = { [K in keyof T]: T[K] } & {};
+
 export type AddOption<
   Map extends OptsMap,
   F extends string,
   Default = undefined,
   Parser = undefined
-> = Map & {
+> = Prettify<Map & {
   [K in OptionKey<F>]: ResolveOptionType<F, Default, Parser>;
-};
+}>;
 
 // ─── Action Handler ─────────────────────────────────────────
 
