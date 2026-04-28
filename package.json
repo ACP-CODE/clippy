@@ -1,0 +1,63 @@
+{
+  "name": "@acp-code/clippy",
+  "version": "0.0.1",
+  "description": "Modern TypeScript-first CLI builder with first-principles option type inference.",
+  "license": "MIT",
+  "author": "ACP-CODE",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "pnpm@9.15.1",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "demo": "tsx examples/demo.ts",
+    "clean": "rimraf dist coverage",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:types": "vitest run --typecheck.only",
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "pnpm run clean && pnpm run build && pnpm run typecheck && pnpm run test"
+  },
+  "keywords": [
+    "cli",
+    "command-line",
+    "argv",
+    "commander",
+    "typescript",
+    "type-inference",
+    "prompts"
+  ],
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "rimraf": "^6.0.1",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
