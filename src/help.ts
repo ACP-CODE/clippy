@@ -25,18 +25,32 @@ export interface HelpConfig {
   };
 }
 
+// const DEFAULT_STYLES: Required<NonNullable<HelpConfig['styles']>> = {
+//   title: (s) => `${ansi.bold}${ansi.yellow}${s}${ansi.reset}`,
+//   usage: (s) => `${ansi.cyan}${s}${ansi.reset}`,
+//   description: (s) => s,
+//   optionFlag: (s) => `${ansi.green}${s}${ansi.reset}`,
+//   optionDesc: (s) => `${ansi.gray}${s}${ansi.reset}`,
+//   commandName: (s) => `${ansi.cyan}${s}${ansi.reset}`,
+//   commandDesc: (s) => `${ansi.gray}${s}${ansi.reset}`,
+//   argName: (s) => `${ansi.magenta}${s}${ansi.reset}`,
+//   hint: (s) => `${ansi.gray}${s}${ansi.reset}`,
+//   error: (s) => `${ansi.red}${s}${ansi.reset}`,
+// };
+
 const DEFAULT_STYLES: Required<NonNullable<HelpConfig['styles']>> = {
-  title: (s) => `${ansi.bold}${ansi.yellow}${s}${ansi.reset}`,
-  usage: (s) => `${ansi.cyan}${s}${ansi.reset}`,
+  title: (s) => s,
+  usage: (s) => s,
   description: (s) => s,
-  optionFlag: (s) => `${ansi.green}${s}${ansi.reset}`,
-  optionDesc: (s) => `${ansi.gray}${s}${ansi.reset}`,
-  commandName: (s) => `${ansi.cyan}${s}${ansi.reset}`,
-  commandDesc: (s) => `${ansi.gray}${s}${ansi.reset}`,
-  argName: (s) => `${ansi.magenta}${s}${ansi.reset}`,
+  optionFlag: (s) => s,
+  optionDesc: (s) => s,
+  commandName: (s) => s,
+  commandDesc: (s) => s,
+  argName: (s) => s,
   hint: (s) => `${ansi.gray}${s}${ansi.reset}`,
   error: (s) => `${ansi.red}${s}${ansi.reset}`,
 };
+
 
 function stripAnsi(s: string): string {
   // eslint-disable-next-line no-control-regex
@@ -104,10 +118,10 @@ export function formatHelp(config: {
   }
 
   // ── Version ──
-  if (version) {
-    lines.push(styles.hint(`version ${version}`));
-    lines.push('');
-  }
+  // if (version) {
+  //   lines.push(styles.hint(`version ${version}`));
+  //   lines.push('');
+  // }
 
   // ── Usage ──
   const usageParts = [fullName];
@@ -145,7 +159,7 @@ export function formatHelp(config: {
     const flagWidth = Math.max(...sorted.map(o => stripAnsi(o.flags).length)) + 2;
 
     for (const opt of sorted) {
-      const flagPart = padEnd(styles.optionFlag(opt.flags), flagWidth + 8);
+      const flagPart = padEnd(styles.optionFlag(opt.flags), flagWidth + 4);
       const descPart = styles.optionDesc(opt.description);
 
       const hints: string[] = [];
@@ -170,7 +184,7 @@ export function formatHelp(config: {
       lines.push(styles.title('Global Options:'));
       const flagWidth = Math.max(...sorted.map(o => stripAnsi(o.flags).length)) + 2;
       for (const opt of sorted) {
-        const flagPart = padEnd(styles.optionFlag(opt.flags), flagWidth + 8);
+        const flagPart = padEnd(styles.optionFlag(opt.flags), flagWidth + 4);
         lines.push(`  ${flagPart}${styles.optionDesc(opt.description)}`);
       }
       lines.push('');
@@ -189,9 +203,9 @@ export function formatHelp(config: {
 
     for (const cmd of sorted) {
       const aliasPart = cmd.aliases.length > 0
-        ? styles.hint(` (alias: ${cmd.aliases.join(', ')})`)
+        ? `|${cmd.aliases.join('|')}`
         : '';
-      const namePart = padEnd(styles.commandName(cmd.name + aliasPart), nameWidth + 16);
+      const namePart = padEnd(styles.commandName(cmd.name + aliasPart), nameWidth + 8);
       lines.push(`  ${namePart}${styles.commandDesc(cmd.description)}`);
     }
     lines.push('');

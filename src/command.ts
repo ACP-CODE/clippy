@@ -95,7 +95,7 @@ export class Command<
     return this;
   }
 
-  version(v: string, flags = '-V, --version', desc = 'display version'): this {
+  version(v: string, flags = '-V, --version', desc = 'Print version'): this {
     this._version = v;
     // Add as a special option
     this._options.push({

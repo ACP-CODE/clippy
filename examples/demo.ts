@@ -4,6 +4,7 @@
 // ============================================================
 
 import { Command, prompt } from '../src';
+import { description, name, version } from '../package.json';
 
 // ─── Parsers (reusable) ──────────────────────────────────────
 
@@ -24,9 +25,9 @@ const collect = (value: string, prev: string[]): string[] => [...prev, value];
 // ─── Root Program ────────────────────────────────────────────
 
 const program = new Command('demo')
-  .description('CLIPPY demo app - showcasing modern TypeScript CLI')
-  .version('1.0.0')
-  .configureHelp({ sortOptions: true });
+  .description(description)
+  .version(version)
+  .configureHelp({ width: 10, sortOptions: true });
 
 // ─── `serve` command ─────────────────────────────────────────
 // Demonstrates: typed options with parsers, defaults, env vars
@@ -168,6 +169,8 @@ const init = new Command('init')
 // Demonstrates: custom parsers on arguments, number prompt
 
 const transform = new Command('transform')
+  .alias('tsf')
+  .alias('tf')
   .description('Transform a numeric value', 'Number transform')
   .argument('<input>', 'Number to transform', { parser: parseFloat_ })
   .option('-m, --multiply <factor>', 'Multiply by factor', {
