@@ -93,6 +93,10 @@ export interface SubcommandInfo {
   aliases: string[];
   hidden: boolean;
   group?: string;
+  /** Subcommand's own options for generating usage snippet */
+  options: OptionDef[];
+  /** Subcommand's own arguments for generating usage snippet */
+  args: ArgDef[];
 }
 
 /** Group items by their group property, returning ordered sections */
@@ -300,11 +304,13 @@ export function formatHelp(config: {
         const aliasPart = cmd.aliases.length > 0 ? `|${cmd.aliases.join('|')}` : '';
         const cmdName = cmd.name + aliasPart;
 
-        // Auto-generate usage snippet in detailed mode
+        // Auto-generate usage snippet in detailed mode using subcommand's own options/args
         let usagePart = '';
         if (detailed) {
-          const optionPart = options.length > 0 ? ' [options]' : '';
-          const argPart = args.length > 0 ? ' ' + args.map(a => a.name).join(' ') : '';
+          const hasOptions = cmd.options && cmd.options.length > 0;
+          const hasArgs = cmd.args && cmd.args.length > 0;
+          const optionPart = hasOptions ? ' [options]' : '';
+          const argPart = hasArgs ? ' ' + cmd.args!.map(a => a.name).join(' ') : '';
           usagePart = optionPart + argPart;
         }
 

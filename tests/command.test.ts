@@ -105,11 +105,16 @@ describe('Command - runtime parsing', () => {
 
 describe('Command - help system', () => {
   it('shows brief help on -h (no Arguments, no option hints)', async () => {
+    const subCmd = new Command('sub')
+      .description('A subcommand')
+      .argument('<env>', 'environment', { choices: ['dev', 'prod'] })
+      .option('-v, --verbose', 'verbose output');
+
     const cmd = new Command('test')
       .description('A test command')
       .argument('<env>', 'environment', { choices: ['dev', 'prod'] })
       .option('-p, --port <port>', 'port number', { default: 3000 })
-      .addCommand(new Command('sub').description('A subcommand'));
+      .addCommand(subCmd);
 
     const briefHelp = cmd.helpText({ detailed: false });
     // Brief mode should NOT include Arguments section
@@ -119,18 +124,25 @@ describe('Command - help system', () => {
     expect(briefHelp).not.toContain('choices:');
     // Brief mode should still include Options
     expect(briefHelp).toContain('Options:');
-    // Brief mode should include command name
+    // Brief mode should include command name (without usage in brief mode)
     expect(briefHelp).toContain('sub');
+    // Brief mode: sub command should NOT have [options] or args
+    expect(briefHelp).toContain('sub          A subcommand');
     // Brief hint should use -h
     expect(briefHelp).toContain('[command] -h');
   });
 
   it('shows detailed help on --help (with Arguments and option hints)', async () => {
+    const subCmd = new Command('sub')
+      .description('A subcommand')
+      .argument('<env>', 'environment', { choices: ['dev', 'prod'] })
+      .option('-v, --verbose', 'verbose output');
+
     const cmd = new Command('test')
       .description('A test command')
       .argument('<env>', 'environment', { choices: ['dev', 'prod'] })
       .option('-p, --port <port>', 'port number', { default: 3000 })
-      .addCommand(new Command('sub').description('A subcommand'));
+      .addCommand(subCmd);
 
     const detailedHelp = cmd.helpText({ detailed: true });
     // Detailed mode should include Arguments section
@@ -140,7 +152,7 @@ describe('Command - help system', () => {
     expect(detailedHelp).toContain('choices:');
     // Detailed mode should include Options
     expect(detailedHelp).toContain('Options:');
-    // Detailed mode should show command with usage snippet
+    // Detailed mode should show command with usage snippet (using subcommand's own options/args)
     expect(detailedHelp).toContain('sub [options] <env>');
     // Detailed hint should use --help
     expect(detailedHelp).toContain('[command] --help');
