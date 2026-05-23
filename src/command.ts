@@ -146,6 +146,7 @@ export class Command<
       env?: string;
       choices?: string[];
       hidden?: boolean;
+      group?: string;
     }
   ): Command<AddOption<Opts, F, Default, Parser>, Args> {
     this._options.push({
@@ -157,6 +158,7 @@ export class Command<
       hidden: config?.hidden ?? false,
       envVar: config?.env,
       choices: config?.choices,
+      group: config?.group,
     });
     return this as any;
   }
@@ -176,6 +178,7 @@ export class Command<
       parser?: Parser extends ((v: string, p: any) => any) ? Parser : never;
       env?: string;
       choices?: string[];
+      group?: string;
     }
   ): Command<AddOption<Opts, F, Default, Parser>, Args> {
     this._options.push({
@@ -187,6 +190,7 @@ export class Command<
       hidden: false,
       envVar: config?.env,
       choices: config?.choices,
+      group: config?.group,
     });
     return this as any;
   }
@@ -213,6 +217,7 @@ export class Command<
       default?: unknown;
       parser?: Parser extends ((v: string, p: any) => any) ? Parser : never;
       choices?: string[];
+      group?: string;
     }
   ): Command<Opts, [...Args, ...(Parser extends (v: string, p: any) => infer R ? [R] : N extends `<${string}...>` | `[${string}...]` ? [string[]] : N extends `<${string}>` ? [string] : [string | undefined])]> {
     this._args.push({
@@ -221,6 +226,7 @@ export class Command<
       parser: config?.parser,
       defaultValue: config?.default,
       choices: config?.choices,
+      group: config?.group,
     });
     return this as any;
   }
@@ -307,6 +313,12 @@ export class Command<
     // Route to subcommand FIRST so subcommands get their own --help
     const [firstArg, ...rest] = rawArgs;
     if (firstArg && !firstArg.startsWith('-')) {
+      // Check for built-in help command
+      if (firstArg === 'help') {
+        this._handleHelpCommand(rest);
+        return;
+      }
+
       const sub = this._subcommands.get(firstArg);
       if (sub) {
         if (this._hooks.preSubcommand) {
@@ -317,9 +329,13 @@ export class Command<
       }
     }
 
-    // Check for help (after subcommand routing)
-    if (rawArgs.includes('--help') || rawArgs.includes('-h')) {
-      process.stdout.write(this.helpText());
+    // Check for help flags (after subcommand routing)
+    if (rawArgs.includes('--help')) {
+      process.stdout.write(this.helpText({ detailed: true }));
+      process.exit(0);
+    }
+    if (rawArgs.includes('-h')) {
+      process.stdout.write(this.helpText({ detailed: false }));
       process.exit(0);
     }
 
@@ -355,8 +371,58 @@ export class Command<
       this._error(`Unknown command: '${rawArgs[0]}'`, 'clippy.unknownCommand');
     } else if (this._subcommands.size > 0) {
       // No action and no subcommand specified: show help
-      process.stdout.write(this.helpText());
+      process.stdout.write(this.helpText({ detailed: true }));
     }
+  }
+
+  /** Handle the built-in help command: help [command] */
+  private _handleHelpCommand(args: string[]): void {
+    if (args.length === 0) {
+      // help - show full help for this command
+      process.stdout.write(this.helpText({ detailed: true }));
+      process.exit(0);
+      return;
+    }
+
+    const [targetName, ...remaining] = args;
+    if (!targetName) {
+      process.stdout.write(this.helpText({ detailed: true }));
+      process.exit(0);
+      return;
+    }
+
+    const targetCmd = this._subcommands.get(targetName);
+
+    if (targetCmd) {
+      // Check for help subcommand on the target
+      if (remaining[0] === 'help') {
+        process.stdout.write(targetCmd.helpText({ detailed: true }));
+        process.exit(0);
+        return;
+      }
+
+      // Check for -h or --help on target
+      if (remaining.includes('--help')) {
+        process.stdout.write(targetCmd.helpText({ detailed: true }));
+        process.exit(0);
+        return;
+      }
+      if (remaining.includes('-h')) {
+        process.stdout.write(targetCmd.helpText({ detailed: false }));
+        process.exit(0);
+        return;
+      }
+
+      // Show detailed help for target command
+      process.stdout.write(targetCmd.helpText({ detailed: true }));
+      process.exit(0);
+      return;
+    }
+
+    // Unknown command
+    process.stderr.write(`${ansi.c(ansi.red, 'error')}: unknown command '${targetName}'\n`);
+    process.stderr.write(this.helpText({ detailed: false }));
+    process.exit(1);
   }
 
   private _parseOptionsAndArgs(rawArgs: string[]): void {
@@ -625,7 +691,7 @@ export class Command<
 
   // ── Help ─────────────────────────────────────────────────────
 
-  helpText(): string {
+  helpText(options?: { detailed?: boolean }): string {
     const subcommandInfos: SubcommandInfo[] = [];
     const seen = new Set<Command<any, any>>();
     for (const [, cmd] of this._subcommands) {
@@ -636,6 +702,7 @@ export class Command<
         description: cmd._summary || cmd._description,
         aliases: cmd._aliases,
         hidden: cmd._hidden,
+        group: cmd._helpConfig.groupOrder ? undefined : undefined, // Groups for subcommands would be configured separately
       });
     }
 
@@ -652,10 +719,11 @@ export class Command<
       subcommands: subcommandInfos,
       helpConfig: this._helpConfig,
       parentNames,
+      detailed: options?.detailed ?? true,
     });
   }
 
-  outputHelp(): void {
-    process.stdout.write(this.helpText());
+  outputHelp(options?: { detailed?: boolean }): void {
+    process.stdout.write(this.helpText(options));
   }
 }

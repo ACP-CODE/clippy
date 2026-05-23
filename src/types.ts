@@ -60,6 +60,7 @@ export interface OptionDef {
   hidden: boolean;
   envVar?: string;
   choices?: string[];
+  group?: string;
 }
 
 export interface ArgDef {
@@ -68,6 +69,7 @@ export interface ArgDef {
   parser: ((v: string, prev: unknown) => unknown) | undefined;
   defaultValue?: unknown;
   choices?: string[];
+  group?: string;
 }
 
 // ─── Type-level Opts Map ─────────────────────────────────────
