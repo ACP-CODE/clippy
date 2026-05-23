@@ -277,10 +277,11 @@ export function formatHelp(config: {
     const groupedCommands = groupItems(sorted, groupOrder);
     const sortedCommandGroups = sortGroups(groupedCommands, groupOrder);
 
+    lines.push(styles.title('Commands:'));
+
     for (const { group, items } of sortedCommandGroups) {
       if (group) {
         lines.push(styles.groupTitle(group));
-        lines.push('');
       }
 
       // Calculate width for command names + usage
