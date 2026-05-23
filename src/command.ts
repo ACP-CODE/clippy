@@ -674,7 +674,7 @@ export class Command<
 
   private _error(message: string, code: string, exitCode = 1): never {
     process.stderr.write(`${ansi.c(ansi.red, 'error')}: ${message}\n`);
-    process.stderr.write(ansi.c(ansi.gray, `Run '${this._getFullName()} --help' for usage.\n`));
+    process.stderr.write(ansi.c(ansi.gray, `Run '${this._getFullName()} -h' for usage.\n`));
     process.exit(exitCode);
   }
 
