@@ -702,7 +702,9 @@ export class Command<
         description: cmd._summary || cmd._description,
         aliases: cmd._aliases,
         hidden: cmd._hidden,
-        group: cmd._helpConfig.groupOrder ? undefined : undefined, // Groups for subcommands would be configured separately
+        group: cmd._helpConfig.groupOrder ? undefined : undefined,
+        options: cmd._options,
+        args: cmd._args,
       });
     }
 
