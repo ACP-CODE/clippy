@@ -1,4 +1,6 @@
-import { program } from "../src";
+import { Command } from "../src";
+
+const program = new Command('split');
 
 program
     .option('--first','')
@@ -11,7 +13,7 @@ program
 
 program.parse();
 
-const options = program.opts();
+const options = program.opts() as { first?: boolean; separator?: string };
 console.log('Options:', options.first);
 // const limit = options.first ? 1 : undefined;
 // console.log(program.args[0].split(options.separator, limit));

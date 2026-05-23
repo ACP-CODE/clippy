@@ -30,7 +30,7 @@ const program = new Command('demo')
   .configureHelp({ width: 10, sortOptions: true });
 
 // ─── `serve` command ─────────────────────────────────────────
-// Demonstrates: typed options with parsers, defaults, env vars
+// Demonstrates: typed options with parsers, defaults, env vars, grouped options
 
 const serve = new Command('serve')
   .description('Start a development server', 'Start dev server')
@@ -38,13 +38,23 @@ const serve = new Command('serve')
     default: 3000,
     parser: parseIntStrict,
     env: 'PORT',
+    group: 'Server Options',
   })
-  .option('-H, --host <string>', 'Hostname to bind', { default: 'localhost' })
-  .option('--https', 'Enable HTTPS', {})
-  .option('--no-open', 'Do not open browser after start', {})
+  .option('-H, --host <string>', 'Hostname to bind', {
+    default: 'localhost',
+    group: 'Server Options',
+  })
+  .option('--https', 'Enable HTTPS', { group: 'Server Options' })
+  .option('--no-open', 'Do not open browser after start', { group: 'Server Options' })
   .option('-l, --log-level <level>', 'Log level', {
     default: 'info' as 'debug' | 'info' | 'warn' | 'error',
     choices: ['debug', 'info', 'warn', 'error'],
+    group: 'Output Options',
+  })
+  .option('-v, --verbose', 'Verbose output', { group: 'Output Options' })
+  .option('--json', 'Output as JSON', { group: 'Output Options' })
+  .configureHelp({
+    groupOrder: ['Server Options', 'Output Options'],
   })
   .action((opts) => {
     // ✅ Full type inference:
@@ -53,6 +63,8 @@ const serve = new Command('serve')
     // opts.https      → boolean       (boolean flag)
     // opts.open       → boolean       (negatable)
     // opts.logLevel   → string        (has default)
+    // opts.verbose    → boolean
+    // opts.json       → boolean
 
     console.log('\n🚀 Starting server...\n');
     console.log('  Port:      ', opts.port);        // number
@@ -60,6 +72,8 @@ const serve = new Command('serve')
     console.log('  HTTPS:     ', opts.https);       // boolean
     console.log('  Open:      ', opts.open);        // boolean
     console.log('  Log level: ', opts.logLevel);    // string
+    console.log('  Verbose:   ', opts.verbose);     // boolean
+    console.log('  JSON:      ', opts.json);         // boolean
     console.log();
   });
 

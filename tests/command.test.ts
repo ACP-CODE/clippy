@@ -102,3 +102,54 @@ describe('Command - runtime parsing', () => {
     expect(cmd.name()).toBe('foo');
   });
 });
+
+describe('Command - help system', () => {
+  it('shows brief help on -h', async () => {
+    const cmd = new Command('test')
+      .description('A test command')
+      .option('-p, --port <port>', 'port number', { default: 3000 })
+      .addCommand(new Command('sub').description('A subcommand'));
+
+    const briefHelp = cmd.helpText({ detailed: false });
+    // Brief mode should not include Options section
+    expect(briefHelp).toContain('Usage:');
+    expect(briefHelp).toContain('sub');  // Commands are shown in both modes
+    expect(briefHelp).not.toContain('Options:');
+  });
+
+  it('shows detailed help on --help', async () => {
+    const cmd = new Command('test')
+      .description('A test command')
+      .option('-p, --port <port>', 'port number', { default: 3000 })
+      .addCommand(new Command('sub').description('A subcommand'));
+
+    const detailedHelp = cmd.helpText({ detailed: true });
+    // Detailed mode should include Options section
+    expect(detailedHelp).toContain('Usage:');
+    expect(detailedHelp).toContain('sub');  // Commands are shown in both modes
+    expect(detailedHelp).toContain('Options:');
+  });
+
+  it('groups options by group property', async () => {
+    const cmd = new Command('test')
+      .option('-p, --port <port>', 'port', { group: 'Server' })
+      .option('--host <host>', 'host', { group: 'Server' })
+      .option('-v, --verbose', 'verbose', { group: 'Output' })
+      .configureHelp({ groupOrder: ['Server', 'Output'] });
+
+    const help = cmd.helpText({ detailed: true });
+    expect(help).toContain('Server');
+    expect(help).toContain('Output');
+  });
+
+  it('adds group to arguments', async () => {
+    const cmd = new Command('test')
+      .argument('<file>', 'input file', { group: 'Input' })
+      .argument('[out]', 'output file', { group: 'Output' })
+      .configureHelp({ groupOrder: ['Input', 'Output'] });
+
+    const help = cmd.helpText({ detailed: true });
+    expect(help).toContain('Input');
+    expect(help).toContain('Output');
+  });
+});
