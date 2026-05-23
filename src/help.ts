@@ -146,7 +146,7 @@ export function formatHelp(config: {
   globalOptions?: OptionDef[];
   helpConfig?: HelpConfig;
   parentNames?: string[];
-  /** When false (-h), omit Options section; true (--help) shows all */
+  /** When false (-h), show brief mode; true (--help) shows detailed mode */
   detailed?: boolean;
 }): string {
   const {
@@ -159,7 +159,6 @@ export function formatHelp(config: {
   const width = helpConfig.width ?? (process.stdout.columns ?? 80);
   const lines: string[] = [];
   const groupOrder = helpConfig.groupOrder ?? [];
-  const showAllOnBrief = helpConfig.showAllOnBrief ?? false;
 
   const fullName = [...parentNames, name].join(' ');
 
@@ -180,32 +179,39 @@ export function formatHelp(config: {
   lines.push(`  ${styles.usage(usageStr)}`);
   lines.push('');
 
-  // ── Arguments (always show) ──
-  const visibleArgs = args.filter(a => a.description);
-  if (visibleArgs.length > 0) {
-    const groupedArgs = groupItems(visibleArgs, groupOrder);
-    const sortedArgGroups = sortGroups(groupedArgs, groupOrder);
+  // ── Arguments (only in detailed mode) ──
+  if (detailed) {
+    const visibleArgs = args.filter(a => a.description);
+    if (visibleArgs.length > 0) {
+      const groupedArgs = groupItems(visibleArgs, groupOrder);
+      const sortedArgGroups = sortGroups(groupedArgs, groupOrder);
 
-    for (const { group, items } of sortedArgGroups) {
-      if (group) {
-        lines.push(styles.groupTitle(group));
+      lines.push(styles.title('Arguments:'));
+
+      for (const { group, items } of sortedArgGroups) {
+        if (group) {
+          lines.push(styles.groupTitle(group));
+        }
+        const nameWidth = Math.max(...items.map(a => stripAnsi(a.name).length)) + 4;
+        for (const arg of items) {
+          const namePart = padEnd(styles.argName(arg.name), nameWidth + 6);
+          const descPart = styles.optionDesc(arg.description);
+          const hints: string[] = [];
+          if (arg.choices) hints.push(`choices: ${arg.choices.join(', ')}`);
+          if (arg.defaultValue !== undefined) {
+            hints.push(`default: ${JSON.stringify(arg.defaultValue)}`);
+          }
+          const hintStr = hints.length > 0 ? styles.hint(` (${hints.join(', ')})`) : '';
+          lines.push(`  ${namePart}${descPart}${hintStr}`);
+        }
         lines.push('');
       }
-      const nameWidth = Math.max(...items.map(a => stripAnsi(a.name).length)) + 4;
-      for (const arg of items) {
-        const namePart = padEnd(styles.argName(arg.name), nameWidth + 6);
-        const descPart = styles.optionDesc(arg.description);
-        const choiceHint = arg.choices ? styles.hint(` (choices: ${arg.choices.join(', ')})`) : '';
-        lines.push(`  ${namePart}${descPart}${choiceHint}`);
-      }
-      lines.push('');
     }
   }
 
-  // ── Options (only in detailed mode or showAllOnBrief) ──
-  const showOptions = detailed || showAllOnBrief;
+  // ── Options ──
   const visibleOptions = options.filter(o => !o.hidden);
-  if (showOptions && visibleOptions.length > 0) {
+  if (visibleOptions.length > 0) {
     const sorted = helpConfig.sortOptions
       ? [...visibleOptions].sort((a, b) => a.flags.localeCompare(b.flags))
       : visibleOptions;
@@ -225,14 +231,16 @@ export function formatHelp(config: {
         const flagPart = padEnd(styles.optionFlag(opt.flags), flagWidth + 4);
         const descPart = styles.optionDesc(opt.description);
 
+        // Only show hints in detailed mode
         const hints: string[] = [];
-        if (opt.envVar) hints.push(`env: ${opt.envVar}`);
-        if (opt.choices) hints.push(`choices: ${opt.choices.join(', ')}`);
-        if (opt.defaultValue !== undefined) {
-          const dv = JSON.stringify(opt.defaultValue);
-          hints.push(`default: ${dv}`);
+        if (detailed) {
+          if (opt.envVar) hints.push(`env: ${opt.envVar}`);
+          if (opt.choices) hints.push(`choices: ${opt.choices.join(', ')}`);
+          if (opt.defaultValue !== undefined) {
+            hints.push(`default: ${JSON.stringify(opt.defaultValue)}`);
+          }
+          if (opt.required) hints.push('required');
         }
-        if (opt.required) hints.push('required');
 
         const hintStr = hints.length > 0 ? styles.hint(` (${hints.join(', ')})`) : '';
         lines.push(`  ${flagPart}${descPart}${hintStr}`);
@@ -241,8 +249,8 @@ export function formatHelp(config: {
     }
   }
 
-  // ── Global Options ──
-  if (showOptions && helpConfig.showGlobalOptions && globalOptions.length > 0) {
+  // ── Global Options (only in detailed mode) ──
+  if (detailed && helpConfig.showGlobalOptions && globalOptions.length > 0) {
     const sorted = [...globalOptions].filter(o => !o.hidden);
     if (sorted.length > 0) {
       lines.push(styles.title('Global Options:'));
@@ -255,7 +263,7 @@ export function formatHelp(config: {
     }
   }
 
-  // ── Subcommands (always show) ──
+  // ── Subcommands ──
   const visibleCommands = subcommands.filter(c => !c.hidden);
   if (visibleCommands.length > 0) {
     const sorted = helpConfig.sortCommands
@@ -270,21 +278,49 @@ export function formatHelp(config: {
         lines.push(styles.groupTitle(group));
         lines.push('');
       }
-      const nameWidth = Math.max(...items.map(c => stripAnsi(c.name).length)) + 2;
+
+      // Calculate width for command names + usage
+      let nameWidth = 0;
+      for (const cmd of items) {
+        // Each command shows its own usage snippet in detailed mode
+        let nameLen = stripAnsi(cmd.name).length;
+        if (cmd.aliases.length > 0) {
+          nameLen += stripAnsi(`|${cmd.aliases.join('|')}`).length;
+        }
+        if (detailed) {
+          // Usage for this command would be added later
+          // Width calculation accounts for [options] and args
+          nameLen += 10; // approximate for [options]
+        }
+        nameWidth = Math.max(nameWidth, nameLen);
+      }
+      nameWidth += 2; // padding
 
       for (const cmd of items) {
-        const aliasPart = cmd.aliases.length > 0
-          ? `|${cmd.aliases.join('|')}`
-          : '';
-        const namePart = padEnd(styles.commandName(cmd.name + aliasPart), nameWidth + 8);
-        lines.push(`  ${namePart}${styles.commandDesc(cmd.description)}`);
+        const aliasPart = cmd.aliases.length > 0 ? `|${cmd.aliases.join('|')}` : '';
+        const cmdName = cmd.name + aliasPart;
+
+        // Auto-generate usage snippet in detailed mode
+        let usagePart = '';
+        if (detailed) {
+          const optionPart = options.length > 0 ? ' [options]' : '';
+          const argPart = args.length > 0 ? ' ' + args.map(a => a.name).join(' ') : '';
+          usagePart = optionPart + argPart;
+        }
+
+        const nameStr = styles.commandName(cmdName + usagePart);
+        const paddedName = padEnd(nameStr, nameWidth + 8);
+        lines.push(`  ${paddedName}${styles.commandDesc(cmd.description)}`);
       }
       lines.push('');
     }
-    if (detailed) {
-      lines.push(styles.hint(`Run '${fullName} [command] --help' for more information on a command.`));
-      lines.push('');
-    }
+
+    // Help hint - differs between modes
+    const helpHint = detailed
+      ? `Run '${fullName} [command] --help' for more information on a command.`
+      : `Run '${fullName} [command] -h' for more information on a command.`;
+    lines.push(styles.hint(helpHint));
+    lines.push('');
   }
 
   return lines.join('\n');
