@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { Command } from '../src';
 
 describe('Command - help system', () => {
@@ -27,7 +28,7 @@ describe('Command - help system', () => {
     // Brief mode: sub command should NOT have [options] or args
     expect(briefHelp).toContain('sub          A subcommand');
     // Brief hint should use -h
-    expect(briefHelp).toContain('[command] -h');
+    expect(briefHelp).toContain('[command] --help');
   });
 
   it('shows detailed help on --help (with Arguments and option hints)', async () => {
@@ -53,7 +54,7 @@ describe('Command - help system', () => {
     // Detailed mode should show command with usage snippet (using subcommand's own options/args)
     expect(detailedHelp).toContain('sub [options] <env>');
     // Detailed hint should use --help
-    expect(detailedHelp).toContain('[command] --help');
+    expect(detailedHelp).toContain('[command] -h');
   });
 
   it('groups options by group property', async () => {
