@@ -30,19 +30,6 @@ export interface HelpConfig {
   };
 }
 
-// const DEFAULT_STYLES: Required<NonNullable<HelpConfig['styles']>> = {
-//   title: (s) => `${ansi.bold}${ansi.yellow}${s}${ansi.reset}`,
-//   usage: (s) => `${ansi.cyan}${s}${ansi.reset}`,
-//   description: (s) => s,
-//   optionFlag: (s) => `${ansi.green}${s}${ansi.reset}`,
-//   optionDesc: (s) => `${ansi.gray}${s}${ansi.reset}`,
-//   commandName: (s) => `${ansi.cyan}${s}${ansi.reset}`,
-//   commandDesc: (s) => `${ansi.gray}${s}${ansi.reset}`,
-//   argName: (s) => `${ansi.magenta}${s}${ansi.reset}`,
-//   hint: (s) => `${ansi.gray}${s}${ansi.reset}`,
-//   error: (s) => `${ansi.red}${s}${ansi.reset}`,
-// };
-
 const DEFAULT_STYLES: Required<NonNullable<HelpConfig['styles']>> = {
   title: (s) => s,
   usage: (s) => s,
@@ -54,7 +41,7 @@ const DEFAULT_STYLES: Required<NonNullable<HelpConfig['styles']>> = {
   argName: (s) => s,
   hint: (s) => `${ansi.gray}${s}${ansi.reset}`,
   error: (s) => `${ansi.red}${s}${ansi.reset}`,
-  groupTitle: (s) => `${ansi.bold}${s}${ansi.reset}`,
+  groupTitle: (s) => `${s}:`,
 };
 
 
@@ -323,9 +310,9 @@ export function formatHelp(config: {
     }
 
     // Help hint - differs between modes
-    const helpHint = detailed
+    const helpHint = !detailed
       ? `Run '${fullName} [command] --help' for more information on a command.`
-      : `Run '${fullName} [command] -h' for more information on a command.`;
+      : `Run '${fullName} [command] -h' to see a summary with options.`;
     lines.push(styles.hint(helpHint));
     lines.push('');
   }
